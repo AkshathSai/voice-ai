@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI Assistant - Settings</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .settings-group {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .setting-item {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .back-button {
+            margin-bottom: 20px;
+        }
+        .save-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .save-status.success {
+            background: rgba(76, 175, 80, 0.3);
+            opacity: 1;
+        }
+        .save-status.error {
+            background: rgba(244, 67, 54, 0.3);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="back-button">
+            <button onclick="window.location.href='/'">← Back to Assistant</button>
+        </div>
+
+        <h1>⚙️ Settings</h1>
+
+        <div class="settings-group">
+            <h2>👤 User Profile</h2>
+            <div class="setting-item">
+                <label for="userName">Name:</label>
+                <input type="text" id="userName" placeholder="Your name">
+            </div>
+            <div class="setting-item">
+                <label for="calorieGoal">Daily Calorie Goal:</label>
+                <input type="number" id="calorieGoal" min="1000" max="5000" placeholder="2000">
+            </div>
+            <div class="setting-item">
+                <label for="units">Preferred Units:</label>
+                <select id="units">
+                    <option value="metric">Metric (°C, kg, km)</option>
+                    <option value="imperial">Imperial (°F, lbs, miles)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h2>🎤 Voice Settings</h2>
+            <div class="setting-item">
+                <label for="wakeWord">Wake Word:</label>
+                <input type="text" id="wakeWord" placeholder="hey assistant" readonly>
+                <small style="opacity: 0.7;">Currently using built-in wake word detection</small>
+            </div>
+            <div class="setting-item">
+                <label>Text-to-Speech:</label>
+                <div id="ttsStatus">Checking...</div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h2>🔧 System Settings</h2>
+            <div class="setting-item">
+                <label>Local AI Model:</label>
+                <div>Mistral 7B (via Ollama)</div>
+            </div>
+            <div class="setting-item">
+                <label>Database:</label>
+                <div>H2 (Local file-based)</div>
+            </div>
+            <div class="setting-item">
+                <label>Encryption:</label>
+                <div>✅ Enabled (Jasypt)</div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h2>🌐 API Settings</h2>
+            <div class="setting-item">
+                <label>Weather API:</label>
+                <div id="weatherStatus">Mock data (for demo)</div>
+            </div>
+            <div class="setting-item">
+                <label>News API:</label>
+                <div id="newsStatus">Mock data (for demo)</div>
+            </div>
+            <small style="opacity: 0.7;">
+                To use real APIs, set environment variables:<br>
+                WEATHER_API_KEY, NEWS_API_KEY
+            </small>
+        </div>
+
+        <div style="text-align: center;">
+            <button onclick="saveSettings()">💾 Save Settings</button>
+            <button onclick="resetSettings()">🔄 Reset to Defaults</button>
+        </div>
+
+        <div class="save-status" id="saveStatus"></div>
+    </div>
+
+    <script>
+        // Load current settings on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            checkSystemStatus();
+        });
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/assistant/profile');
+                const profile = await response.json();
+
+                document.getElementById('userName').value = profile.name || '';
+                document.getElementById('calorieGoal').value = profile.daily_calorie_goal || 2000;
+                document.getElementById('units').value = profile.preferred_units || 'metric';
+
+                // Load wake word from status
+                const statusResponse = await fetch('/assistant/status');
+                const status = await statusResponse.json();
+                document.getElementById('wakeWord').value = status.wakeWord || 'hey assistant';
+
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        async function saveSettings() {
+            const profile = {
+                name: document.getElementById('userName').value,
+                daily_calorie_goal: parseInt(document.getElementById('calorieGoal').value) || 2000,
+                preferred_units: document.getElementById('units').value
+            };
+
+            try {
+                const response = await fetch('/assistant/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profile)
+                });
+
+                if (response.ok) {
+                    showSaveStatus('Settings saved successfully!', 'success');
+                } else {
+                    showSaveStatus('Error saving settings', 'error');
+                }
+            } catch (error) {
+                showSaveStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        function resetSettings() {
+            document.getElementById('userName').value = 'User';
+            document.getElementById('calorieGoal').value = '2000';
+            document.getElementById('units').value = 'metric';
+            showSaveStatus('Settings reset to defaults', 'success');
+        }
+
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/assistant/status');
+                const status = await response.json();
+
+                document.getElementById('ttsStatus').textContent =
+                    status.ttsAvailable ? '✅ Available' : '❌ Not Available';
+
+            } catch (error) {
+                document.getElementById('ttsStatus').textContent = '❌ Error checking status';
+            }
+        }
+
+        function showSaveStatus(message, type) {
+            const statusDiv = document.getElementById('saveStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `save-status ${type}`;
+
+            setTimeout(() => {
+                statusDiv.classList.remove(type);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

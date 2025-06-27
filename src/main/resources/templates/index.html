@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI Assistant</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .status-panel {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .chat-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+        }
+        .user-message {
+            background: rgba(100, 200, 255, 0.3);
+            margin-left: 20%;
+        }
+        .assistant-message {
+            background: rgba(255, 255, 255, 0.2);
+            margin-right: 20%;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #commandInput {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        #commandInput::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .listening-indicator {
+            text-align: center;
+            font-size: 18px;
+            margin: 20px 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .listening-indicator.active {
+            opacity: 1;
+        }
+        .skills-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        .skill-category {
+            margin-bottom: 15px;
+        }
+        .skill-category h3 {
+            margin: 0 0 10px 0;
+            color: #FFD700;
+        }
+        .skill-examples {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice AI Assistant</h1>
+
+        <div class="status-panel">
+            <div id="status">Status: Loading...</div>
+            <div id="networkStatus">Network: Checking...</div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" onclick="startAssistant()">Start Assistant</button>
+            <button id="stopBtn" onclick="stopAssistant()">Stop Assistant</button>
+            <button onclick="refreshStatus()">Refresh Status</button>
+            <button onclick="window.location.href='/settings'">Settings</button>
+        </div>
+
+        <div class="listening-indicator" id="listeningIndicator">
+            🎧 Listening...
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="assistant-message">
+                Welcome! I'm your local-first voice AI assistant. I can help with reminders, coding questions, nutrition tracking, weather, news, and more. Start by clicking "Start Assistant" or type a command below.
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="commandInput" placeholder="Type a command or question..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendCommand()">Send</button>
+            <button onclick="speakResponse()">🔊 Speak</button>
+        </div>
+
+        <div class="skills-info">
+            <h2>💡 What I Can Do</h2>
+            <div class="skill-category">
+                <h3>📅 Local Skills (Always Available)</h3>
+                <div class="skill-examples">
+                    • Reminders: "Remind me to call John at 3 PM"<br>
+                    • Nutrition: "I ate a sandwich for lunch"<br>
+                    • Coding: "Help me debug this Python function"<br>
+                    • Timers: "Set a timer for 5 minutes"
+                </div>
+            </div>
+            <div class="skill-category">
+                <h3>🌐 Online Skills (When Connected)</h3>
+                <div class="skill-examples">
+                    • Weather: "What's the weather like?"<br>
+                    • News: "Give me the latest headlines"
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lastResponse = '';
+
+        async function startAssistant() {
+            try {
+                const response = await fetch('/assistant/start', { method: 'POST' });
+                const data = await response.json();
+                addMessage('Assistant', data.message || 'Assistant started');
+                refreshStatus();
+            } catch (error) {
+                addMessage('System', 'Error starting assistant: ' + error.message);
+            }
+        }
+
+        async function stopAssistant() {
+            try {
+                const response = await fetch('/assistant/stop', { method: 'POST' });
+                const data = await response.json();
+                addMessage('Assistant', data.message || 'Assistant stopped');
+                refreshStatus();
+            } catch (error) {
+                addMessage('System', 'Error stopping assistant: ' + error.message);
+            }
+        }
+
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/assistant/status');
+                const data = await response.json();
+                document.getElementById('status').textContent =
+                    `Running: ${data.running}, Listening: ${data.listening}, TTS: ${data.ttsAvailable}`;
+
+                const indicator = document.getElementById('listeningIndicator');
+                if (data.listening) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Status: Error fetching status';
+            }
+        }
+
+        async function sendCommand() {
+            const input = document.getElementById('commandInput');
+            const command = input.value.trim();
+            if (!command) return;
+
+            addMessage('You', command);
+            input.value = '';
+
+            try {
+                const response = await fetch('/assistant/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: command })
+                });
+                const data = await response.json();
+                addMessage('Assistant', data.response);
+                lastResponse = data.response;
+            } catch (error) {
+                addMessage('System', 'Error: ' + error.message);
+            }
+        }
+
+        async function speakResponse() {
+            if (!lastResponse) {
+                addMessage('System', 'No response to speak');
+                return;
+            }
+
+            // Extract only the actual response, filtering out thinking process
+            let textToSpeak = lastResponse;
+
+            // Remove thinking process (content between <think> and </think> tags)
+            textToSpeak = textToSpeak.replace(/<think>[\s\S]*?<\/think>\s*/g, '');
+
+            // If there's still no meaningful content after filtering, don't speak
+            if (!textToSpeak.trim()) {
+                addMessage('System', 'No speakable content in response');
+                return;
+            }
+
+            try {
+                await fetch('/assistant/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: textToSpeak.trim() })
+                });
+                addMessage('System', '🔊 Speaking response...');
+            } catch (error) {
+                addMessage('System', 'Error speaking: ' + error.message);
+            }
+        }
+
+        function addMessage(sender, message) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'You' ? 'user-message' : 'assistant-message'}`;
+            messageDiv.textContent = `${sender}: ${message}`;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendCommand();
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshStatus();
+            setInterval(refreshStatus, 5000); // Refresh status every 5 seconds
+        });
+    </script>
+</body>
+</html>
