@@ -1,11 +1,14 @@
 package com.akshathsaipittala.voiceai;
 
+import com.akshathsaipittala.voiceai.weather.WeatherConfigProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
 @EnableScheduling
+@SpringBootApplication
+@EnableConfigurationProperties(WeatherConfigProperties.class)
 public class VoiceAiApplication {
 
     public static void main(String[] args) {

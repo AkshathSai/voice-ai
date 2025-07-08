@@ -110,16 +110,6 @@
             <artifactId>vosk</artifactId>
             <version>0.3.45</version>
         </dependency>
-        <!--<dependency>
-            <groupId>javax.sound</groupId>
-            <artifactId>jsapi</artifactId>
-            <version>1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.speech</groupId>
-            <artifactId>freetts</artifactId>
-            <version>1.2.2</version>
-        </dependency>-->
 
         <!-- Use this FreeTTS dependency instead (includes JSAPI) -->
         <dependency>
